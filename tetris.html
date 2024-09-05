@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tetris 3D</title>
+  <style>
+    body { margin: 0; }
+    canvas { display: block; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <script>
+    let scene, camera, renderer, currentPiece, pieces = [];
+    const pieceSize = 1;
+    const gridHeight = 20;
+    const gridWidth = 10;
+    const gridDepth = 10;
+    let grid = [];
+    let dropInterval = 500;  // Tempo entre cada movimento para baixo (500 ms)
+
+    let lastDropTime = 0;
+
+    const tetrominoes = {
+      I: [[0, 0, 0], [1, 0, 0], [2, 0, 0], [-1, 0, 0]],   // Peça I
+      O: [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]],    // Peça O
+      T: [[0, 0, 0], [-1, 0, 0], [1, 0, 0], [0, 1, 0]],   // Peça T
+      L: [[0, 0, 0], [-1, 0, 0], [1, 0, 0], [1, 1, 0]],   // Peça L
+      J: [[0, 0, 0], [-1, 0, 0], [1, 0, 0], [-1, 1, 0]],  // Peça J
+      S: [[0, 0, 0], [-1, 0, 0], [0, 1, 0], [1, 1, 0]],   // Peça S
+      Z: [[0, 0, 0], [1, 0, 0], [0, 1, 0], [-1, 1, 0]],   // Peça Z
+    };
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+      
+      const pointLight = new THREE.PointLight(0xffffff, 1);
+      pointLight.position.set(10, 10, 10);
+      scene.add(pointLight);
+
+      camera.position.set(5, 10, 20);
+      camera.lookAt(5, 0, 0);
+
+      // Inicializa grid
+      for (let y = 0; y < gridHeight; y++) {
+        grid[y] = [];
+        for (let x = 0; x < gridWidth; x++) {
+          grid[y][x] = [];
+          for (let z = 0; z < gridDepth; z++) {
+            grid[y][x][z] = null;
+          }
+        }
+      }
+
+      // Gerar a primeira peça
+      spawnNewPiece();
+      animate();
+    }
+
+    // Função para criar cubos
+    function createCube(x, y, z, color) {
+      const geometry = new THREE.BoxGeometry(pieceSize, pieceSize, pieceSize);
+      const material = new THREE.MeshStandardMaterial({ color: color });
+      const cube = new THREE.Mesh(geometry, material);
+      cube.position.set(x, y, z);
+      scene.add(cube);
+      return cube;
+    }
+
+    // Gerar nova peça aleatória
+    function spawnNewPiece() {
+      const keys = Object.keys(tetrominoes);
+      const randomKey = keys[Math.floor(Math.random() * keys.length)];
+      const shape = tetrominoes[randomKey];
+      const color = Math.random() * 0xffffff;
+
+      currentPiece = shape.map(offset => {
+        return createCube(5 + offset[0], 19 + offset[1], 5 + offset[2], color);
+      });
+
+      pieces.push(...currentPiece);
+    }
+
+    // Verifica colisão
+    function checkCollision(piece) {
+      return piece.some(cube => {
+        const { x, y, z } = cube.position;
+        if (y <= 0) return true;
+        if (grid[Math.floor(y - 1)][Math.floor(x)][Math.floor(z)] !== null) return true;
+        return false;
+      });
+    }
+
+    // Adicionar peça ao grid
+    function addToGrid(piece) {
+      piece.forEach(cube => {
+        const { x, y, z } = cube.position;
+        grid[Math.floor(y)][Math.floor(x)][Math.floor(z)] = cube;
+      });
+    }
+
+    // Movimentar a peça para baixo
+    function movePieceDown() {
+      if (checkCollision(currentPiece)) {
+        addToGrid(currentPiece);
+        spawnNewPiece();
+      } else {
+        currentPiece.forEach(cube => cube.position.y -= 1);
+      }
+    }
+
+    // Função de animação
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      if (time - lastDropTime > dropInterval) {
+        movePieceDown();
+        lastDropTime = time;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Controle de rotação e movimento
+    function rotatePiece() {
+      const origin = currentPiece[0].position;  // Rotacionar em torno da peça principal
+      currentPiece.forEach(cube => {
+        const x = cube.position.x - origin.x;
+        const y = cube.position.y - origin.y;
+        cube.position.x = -y + origin.x;  // Rotaciona em 90 graus
+        cube.position.y = x + origin.y;
+      });
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") {
+        currentPiece.forEach(cube => cube.position.x -= 1);
+      }
+      if (event.key === "ArrowRight") {
+        currentPiece.forEach(cube => cube.position.x += 1);
+      }
+      if (event.key === "ArrowDown") {
+        movePieceDown();
+      }
+      if (event.key === "ArrowUp") {
+        rotatePiece();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
