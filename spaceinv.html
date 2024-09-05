@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Invaders</title>
+  <style>
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background-color: black;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Dimensões do jogador
+  const playerWidth = 60;
+  const playerHeight = 20;
+  const playerSpeed = 7;
+  let playerX = (canvas.width - playerWidth) / 2;
+
+  // Controlar disparos do jogador
+  let bullets = [];
+  const bulletWidth = 5;
+  const bulletHeight = 10;
+  const bulletSpeed = 5;
+
+  // Definição dos invasores
+  const invaders = [];
+  const invaderRows = 5;
+  const invaderCols = 10;
+  const invaderWidth = 40;
+  const invaderHeight = 20;
+  const invaderPadding = 10;
+  const invaderOffsetTop = 30;
+  const invaderOffsetLeft = 30;
+  let invaderDirection = 1; // Direção dos invasores (1 = direita, -1 = esquerda)
+  let invaderSpeed = 1;
+
+  // Inicializa os invasores
+  for (let row = 0; row < invaderRows; row++) {
+    invaders[row] = [];
+    for (let col = 0; col < invaderCols; col++) {
+      invaders[row][col] = {
+        x: col * (invaderWidth + invaderPadding) + invaderOffsetLeft,
+        y: row * (invaderHeight + invaderPadding) + invaderOffsetTop,
+        status: 1, // 1 significa que o invasor está vivo
+      };
+    }
+  }
+
+  // Variáveis de controle
+  let rightPressed = false;
+  let leftPressed = false;
+  let spacePressed = false;
+
+  // Função para desenhar o jogador
+  function drawPlayer() {
+    ctx.fillStyle = 'green';
+    ctx.fillRect(playerX, canvas.height - playerHeight - 10, playerWidth, playerHeight);
+  }
+
+  // Função para desenhar os disparos do jogador
+  function drawBullets() {
+    ctx.fillStyle = 'yellow';
+    bullets.forEach((bullet, index) => {
+      ctx.fillRect(bullet.x, bullet.y, bulletWidth, bulletHeight);
+      bullet.y -= bulletSpeed;
+
+      // Remove o disparo se sair da tela
+      if (bullet.y < 0) {
+        bullets.splice(index, 1);
+      }
+    });
+  }
+
+  // Função para desenhar os invasores
+  function drawInvaders() {
+    invaders.forEach(row => {
+      row.forEach(invader => {
+        if (invader.status === 1) {
+          ctx.fillStyle = 'red';
+          ctx.fillRect(invader.x, invader.y, invaderWidth, invaderHeight);
+        }
+      });
+    });
+  }
+
+  // Função para mover os invasores
+  function moveInvaders() {
+    let edgeReached = false;
+
+    invaders.forEach(row => {
+      row.forEach(invader => {
+        if (invader.status === 1) {
+          invader.x += invaderSpeed * invaderDirection;
+          if (invader.x + invaderWidth > canvas.width || invader.x < 0) {
+            edgeReached = true;
+          }
+        }
+      });
+    });
+
+    // Inverte a direção e move os invasores para baixo se atingir a borda
+    if (edgeReached) {
+      invaderDirection *= -1;
+      invaders.forEach(row => {
+        row.forEach(invader => {
+          invader.y += invaderHeight;
+        });
+      });
+    }
+  }
+
+  // Função para detectar colisões entre disparos e invasores
+  function detectCollisions() {
+    bullets.forEach((bullet, bulletIndex) => {
+      invaders.forEach(row => {
+        row.forEach((invader, invaderIndex) => {
+          if (invader.status === 1 && bullet.x > invader.x && bullet.x < invader.x + invaderWidth &&
+              bullet.y > invader.y && bullet.y < invader.y + invaderHeight) {
+            invader.status = 0; // Invasor destruído
+            bullets.splice(bulletIndex, 1); // Remove o disparo
+          }
+        });
+      });
+    });
+  }
+
+  // Função para desenhar todos os elementos do jogo
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa a tela
+
+    drawPlayer();
+    drawBullets();
+    drawInvaders();
+    detectCollisions();
+    moveInvaders();
+
+    // Movimento do jogador
+    if (rightPressed && playerX < canvas.width - playerWidth) {
+      playerX += playerSpeed;
+    } else if (leftPressed && playerX > 0) {
+      playerX -= playerSpeed;
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  // Função para disparar
+  function shootBullet() {
+    if (spacePressed) {
+      bullets.push({
+        x: playerX + playerWidth / 2 - bulletWidth / 2,
+        y: canvas.height - playerHeight - 20,
+      });
+      spacePressed = false; // Evita disparar várias balas com uma única tecla pressionada
+    }
+  }
+
+  // Eventos de controle do teclado
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Right' || event.key === 'ArrowRight') {
+      rightPressed = true;
+    } else if (event.key === 'Left' || event.key === 'ArrowLeft') {
+      leftPressed = true;
+    } else if (event.key === ' ' || event.code === 'Space') {
+      spacePressed = true;
+      shootBullet();
+    }
+  });
+
+  document.addEventListener('keyup', (event) => {
+    if (event.key === 'Right' || event.key === 'ArrowRight') {
+      rightPressed = false;
+    } else if (event.key === 'Left' || event.key === 'ArrowLeft') {
+      leftPressed = false;
+    }
+  });
+
+  // Inicia o jogo
+  draw();
+</script>
+
+</body>
+</html>
