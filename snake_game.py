@@ -1,29 +1,29 @@
 import pygame
 import random
 
-# Inicializa o pygame
+# inicializa o pygame
 pygame.init()
 
-# Define as cores
+# define as cores
 BRANCO = (255, 255, 255)
 PRETO = (0, 0, 0)
 VERDE = (0, 255, 0)
 VERMELHO = (255, 0, 0)
 
-# Define o tamanho da tela
+# define o tamanho da tela
 largura_tela = 600
 altura_tela = 400
 tela = pygame.display.set_mode((largura_tela, altura_tela))
 pygame.display.set_caption('Snake Game')
 
-# Define o relógio
+# define o relógio
 relogio = pygame.time.Clock()
 
-# Define o tamanho da cobra e a velocidade
+# define o tamanho da cobra e a velocidade
 tamanho_cobra = 20
 velocidade = 15
 
-# Define a fonte
+# define a fonte
 fonte = pygame.font.SysFont(None, 35)
 
 def mostrar_pontuacao(pontuacao):
